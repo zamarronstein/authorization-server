@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 @Configuration
 @Slf4j
 public class AuthorizationSecurityConfig {
-    @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+    @Value("${spring.security.oauth2.authorizationserver.issuer}")
     private String issuerUri;
 
     @Value("${security.redirect-uri}")
