@@ -131,6 +131,7 @@ public class AuthorizationSecurityConfig {
             Authentication principal = context.getPrincipal();
             if (context.getTokenType().getValue().equals("id_token")) {
                 context.getClaims().claim("token_type", "id token");
+                context.getClaims().issuer(this.issuerUri);
             }
 
             if (context.getTokenType().getValue().equals("access_token")) {
