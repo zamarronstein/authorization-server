@@ -140,6 +140,7 @@ public class AuthorizationSecurityConfig {
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.toSet());
                 context.getClaims().claim("roles", roles).claim("username", principal.getName());
+                context.getClaims().issuer(this.issuerUri);
             }
         };
     }
