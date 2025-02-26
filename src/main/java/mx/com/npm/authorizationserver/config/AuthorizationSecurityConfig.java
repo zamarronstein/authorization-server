@@ -4,6 +4,7 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,8 +49,12 @@ import java.util.stream.Collectors;
  * Clase de configuración para establecer este servicio como servidor de autorización
  * */
 @Configuration
+@RequiredArgsConstructor
 @Slf4j
 public class AuthorizationSecurityConfig {
+
+    private final PasswordEncoder passwordEncoder;
+
     /**
      * URL del servidor de autorización
      * */
@@ -102,38 +107,11 @@ public class AuthorizationSecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+        http.authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**").permitAll().anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults());
+
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**"));
         return http.build();
-    }
-
-    /**
-     * Configuración del servicio de detalles del usuario.
-     * Se crea un objeto UserDetails para el usuario "user" con una contraseña codificada,
-     * asignándole el rol "USER". Este usuario se almacena en memoria.
-     *
-     * @return UserDetailsService configurado con un usuario en memoria.
-     */
-    @Bean
-    public UserDetailsService userDetailsService() {
-        UserDetails userDetails = User.withUsername("user")
-                .passwordEncoder(passwordEncoder()::encode)
-                .password("user")
-                .roles("USER")
-                .build();
-
-        return new InMemoryUserDetailsManager(userDetails);
-    }
-
-    /**
-     * Configuración del codificador de contraseñas.
-     * Se utiliza el codificador de contraseñas BCrypt.
-     *
-     * @return PasswordEncoder configurado con el algoritmo BCrypt.
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
     }
 
     /**
@@ -148,7 +126,7 @@ public class AuthorizationSecurityConfig {
         RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("oidc-client")
 
-                .clientSecret(passwordEncoder().encode("secret"))
+                .clientSecret(passwordEncoder.encode("secret"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
