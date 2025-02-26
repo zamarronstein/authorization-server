@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mx.com.npm.authorizationserver.service.ClientService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,6 +55,7 @@ import java.util.stream.Collectors;
 public class AuthorizationSecurityConfig {
 
     private final PasswordEncoder passwordEncoder;
+    private final ClientService clientService;
 
     /**
      * URL del servidor de autorización
@@ -107,47 +109,11 @@ public class AuthorizationSecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain webSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**").permitAll().anyRequest().authenticated())
+        http.authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**", "/client/**").permitAll().anyRequest().authenticated())
                 .formLogin(Customizer.withDefaults());
 
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**"));
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/auth/**", "/client/**"));
         return http.build();
-    }
-
-    /**
-     * Configuración del repositorio de clientes registrados.
-     * Se crea un cliente registrado con un ID único, un ID de cliente, un secreto codificado,
-     * métodos de autenticación, tipos de concesión, URI de redireccionamiento, ámbito, configuración de cliente y se almacena en memoria.
-     *
-     * @return RegisteredClientRepository configurado con un cliente registrado en memoria.
-     */
-    @Bean
-    public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
-                .clientId("oidc-client")
-
-                .clientSecret(passwordEncoder.encode("secret"))
-                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-                .redirectUri(this.redirectUri)
-                .scope(OidcScopes.OPENID)
-                .clientSettings(clientSettings())
-                .build();
-
-              return new InMemoryRegisteredClientRepository(registeredClient);
-    }
-
-    /**
-     * Configuración de las configuraciones del cliente.
-     * Se establece la necesidad de la prueba de clave (proof key) como verdadera.
-     *
-     * @return ClientSettings configurado con la necesidad de la prueba de clave como verdadera.
-     */
-    @Bean
-    public ClientSettings clientSettings() {
-        return ClientSettings.builder().requireProofKey(true).build();
     }
 
     /**
